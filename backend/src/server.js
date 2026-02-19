@@ -30,42 +30,93 @@ app.use("/api/reviews", reviewsRouter);
 app.use("/api/contact", contactRouter);
 app.use("/api/admin", adminRouter);
 
-// static frontend
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const staticDir = path.join(__dirname, "..", "public_frontend");
+
+/* ============================= */
+/*         FRONTEND STATIC       */
+/* ============================= */
+
+// 1) Cas local (docker-compose backend/public_frontend)
+const dirA = path.join(__dirname, "..", "public_frontend");
+
+// 2) Cas Render (repo racine -> frontend/)
+const dirB = path.join(__dirname, "..", "..", "frontend");
+
+// On choisit le bon dossier automatiquement
+const staticDir = fs.existsSync(path.join(dirA, "index.html"))
+  ? dirA
+  : dirB;
+
+console.log("Serving frontend from:", staticDir);
+
 app.use("/", express.static(staticDir));
-app.get("*", (req, res) => res.sendFile(path.join(staticDir, "index.html")));
+app.get("*", (req, res) =>
+  res.sendFile(path.join(staticDir, "index.html"))
+);
 
 const PORT = Number(process.env.PORT || 3000);
 
+/* ============================= */
+/*         MIGRATIONS DB         */
+/* ============================= */
+
 async function runMigrations() {
-  const schemaPath = path.resolve("database/postgres/1_schema.sql");
-  const seedPath = path.resolve("database/postgres/2_seed.sql");
-  
-  const schema = fs.readFileSync(schemaPath, "utf-8");
-  const seed = fs.readFileSync(seedPath, "utf-8");
+  try {
+    const schemaPath = path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "database",
+      "postgres",
+      "1_schema.sql"
+    );
 
-  await pool.query(schema);
-  await pool.query(seed);
+    const seedPath = path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "database",
+      "postgres",
+      "2_seed.sql"
+    );
 
-  console.log("Database initialized (schema + seed).");
+    if (fs.existsSync(schemaPath)) {
+      const schema = fs.readFileSync(schemaPath, "utf-8");
+      await pool.query(schema);
+    }
+
+    if (fs.existsSync(seedPath)) {
+      const seed = fs.readFileSync(seedPath, "utf-8");
+      await pool.query(seed);
+    }
+
+    console.log("Database initialized (schema + seed).");
+  } catch (e) {
+    console.error("Migration error:", e.message);
+  }
 }
+
+/* ============================= */
+/*            START APP          */
+/* ============================= */
 
 async function start() {
   await pool.query("SELECT 1");
 
   await runMigrations();
-
   await bootstrapPasswords();
-try {
-  await mongoConnect();
-  console.log("Mongo connected");
-} catch (e) {
-  console.error("Mongo disabled (startup continues):", e?.message || e);
-}
 
-  app.listen(PORT, () => console.log(`App running on ${PORT}`));
+  try {
+    await mongoConnect();
+    console.log("Mongo connected");
+  } catch (e) {
+    console.error("Mongo disabled (startup continues):", e.message);
+  }
+
+  app.listen(PORT, () =>
+    console.log(`App running on ${PORT}`)
+  );
 }
 
 start().catch((e) => {
