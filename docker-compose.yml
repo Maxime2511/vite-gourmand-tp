@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vite_gourmand
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/postgres/1_schema.sql:/docker-entrypoint-initdb.d/1_schema.sql:ro
+      - ./database/postgres/2_seed.sql:/docker-entrypoint-initdb.d/2_seed.sql:ro
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+
+  app:
+    build: ./backend
+    env_file:
+      - .env
+    ports:
+      - "3600:3000"
+    depends_on:
+      - postgres
+      - mongo
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app/public_frontend:ro
+
