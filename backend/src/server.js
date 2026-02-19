@@ -42,6 +42,27 @@ async function start(){
   await pool.query("SELECT 1");
   await bootstrapPasswords();
   await mongoConnect();
+
+  import fs from "fs";
+import path from "path";
+import { pool } from "./services/pg.js";
+
+async function runMigrations() {
+  const schema = fs.readFileSync(
+    path.resolve("database/postgres/1_schema.sql"),
+    "utf-8"
+  );
+  const seed = fs.readFileSync(
+    path.resolve("database/postgres/2_seed.sql"),
+    "utf-8"
+  );
+
+  await pool.query(schema);
+  await pool.query(seed);
+  console.log("Database initialized");
+}
+
+  
   app.listen(PORT, ()=>console.log(`App running on ${PORT}`));
 }
 start().catch(e=>{ console.error(e); process.exit(1); });
