@@ -42,6 +42,7 @@ async function start(){
   await pool.query("SELECT 1");
   await bootstrapPasswords();
   await mongoConnect();
+  await runMigrations();
 
   import fs from "fs";
 import path from "path";
