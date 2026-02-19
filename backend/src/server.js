@@ -42,7 +42,7 @@ const PORT = Number(process.env.PORT || 3000);
 async function runMigrations() {
   const schemaPath = path.resolve("database/postgres/1_schema.sql");
   const seedPath = path.resolve("database/postgres/2_seed.sql");
-
+  
   const schema = fs.readFileSync(schemaPath, "utf-8");
   const seed = fs.readFileSync(seedPath, "utf-8");
 
@@ -55,7 +55,6 @@ async function runMigrations() {
 async function start() {
   await pool.query("SELECT 1");
 
-  // ⚠️ Doit être AVANT bootstrapPasswords, sinon users n'existe pas
   await runMigrations();
 
   await bootstrapPasswords();
