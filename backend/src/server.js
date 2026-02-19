@@ -58,7 +58,12 @@ async function start() {
   await runMigrations();
 
   await bootstrapPasswords();
+try {
   await mongoConnect();
+  console.log("Mongo connected");
+} catch (e) {
+  console.error("Mongo disabled (startup continues):", e?.message || e);
+}
 
   app.listen(PORT, () => console.log(`App running on ${PORT}`));
 }
