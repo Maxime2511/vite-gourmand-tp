@@ -1,6 +1,7 @@
 import pg from "pg";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const poolConfig = process.env.DATABASE_URL
@@ -16,20 +17,16 @@ const poolConfig = process.env.DATABASE_URL
 export const pool = new pg.Pool(poolConfig);
 
 export async function bootstrapPasswords() {
-  const res = await pool.query("SELECT id FROM users WHERE password_hash='__BOOTSTRAP__'");
+  const res = await pool.query(
+    "SELECT id FROM users WHERE password_hash='__BOOTSTRAP__'"
+  );
   if (res.rowCount === 0) return;
+
   const hash = await bcrypt.hash("Password123!", 10);
   for (const row of res.rows) {
-    await pool.query("UPDATE users SET password_hash=$1 WHERE id=$2", [hash, row.id]);
-  }
-}
-
-
-export async function bootstrapPasswords() {
-  const res = await pool.query("SELECT id FROM users WHERE password_hash='__BOOTSTRAP__'");
-  if (res.rowCount === 0) return;
-  const hash = await bcrypt.hash("Password123!", 10);
-  for (const row of res.rows) {
-    await pool.query("UPDATE users SET password_hash=$1 WHERE id=$2", [hash, row.id]);
+    await pool.query("UPDATE users SET password_hash=$1 WHERE id=$2", [
+      hash,
+      row.id,
+    ]);
   }
 }
